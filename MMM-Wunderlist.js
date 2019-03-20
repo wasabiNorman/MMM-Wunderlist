@@ -80,6 +80,7 @@ Module.register("MMM-Wunderlist", {
 				}
 			}
 		}
+		console.log(tasksShown);
 		return tasksShown.slice(0, this.config.maximumEntries);
 	},
 
@@ -96,7 +97,7 @@ Module.register("MMM-Wunderlist", {
 			'<tr><td>{0}</td><td>{1}</td><td class="title bright">{2}</td><td>{3}</td></tr>',
 		star: '<i class="fa fa-star" aria-hidden="true"></i>',
 		assignee:
-			'<div style="display: inline-flex; align-items: center; justify-content: center; background-color: #aaa; color: #666; min-width: 1em; border-radius: 50%; vertical-align: middle; padding: 2px; text-transform: uppercase;">{0}</div>'
+			' <span style="font-size: 80%"> {0}</span>'
 	},
 
 	getDom: function() {

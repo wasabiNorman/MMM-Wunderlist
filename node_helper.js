@@ -58,7 +58,11 @@ module.exports = NodeHelper.create({
 	addUsers: function(users) {
 		var self = this;
 		users.forEach(function(user) {
-			self.users[user.id] = user.name[0];
+			console.log(user);
+				let fullName = user.name || ' ';
+				let email = user.email;
+				let names = fullName.split(' ');
+				self.users[user.id] = names[0] || user.email;
 		});
 	},
 
@@ -83,7 +87,7 @@ module.exports = NodeHelper.create({
 							" - accessToken:  " +
 							account.accessToken +
 							"Reason: " +
-							err.stack
+							err
 					);
 				});
 		});
