@@ -12,203 +12,205 @@ var NodeHelper = require("node_helper");
 const Fetcher = require("./fetcher.js");
 
 module.exports = NodeHelper.create({
-	start: function() {
-		this.instances = [];
-		this.startedInstances = 0;
-		this.allModulesLoaded = false;
-		this.lists = [];
-		this.users = {};
-		this.fetchers = {};
-		this.configs = {};
-	},
-	getLists: function(options, callback) {
-		var self = this;
-		var wunderlist = new Wunderlist(options.clientID, options.accessToken);
-		wunderlist
-			.retrieveLists()
-			.then(function(lists) {
-				callback(lists);
-			})
-			.catch(function(err) {
-				console.error(
-					"MMM-Wunderlist: Failed to retrieve lists for clientID:" +
-						options.clientID +
-						" - accessToken:  " +
-						options.accessToken +
-						"Reason: " +
-						err.stack
-				);
-			});
-	},
+    start: function () {
+        this.instances = [];
+        this.startedInstances = 0;
+        this.allModulesLoaded = false;
+        this.lists = [];
+        this.users = {};
+        this.fetchers = {};
+        this.configs = {};
+    },
+    getLists: function (options, callback) {
+        var self = this;
+        var wunderlist = new Wunderlist(options.clientID, options.accessToken);
+        wunderlist
+            .retrieveLists()
+            .then(function (lists) {
+                callback(lists);
+            })
+            .catch(function (err) {
+                console.error(
+                    "MMM-Wunderlist: Failed to retrieve lists for clientID:" +
+                    options.clientID +
+                    " - accessToken:  " +
+                    options.accessToken +
+                    "Reason: " +
+                    err.stack
+                );
+            });
+    },
 
-	determineAccounts: function(configs) {
-		var accounts = [];
-		Object.keys(configs).forEach(function(listID) {
-			if (
-				!accounts.some(account => account.clientID === configs[listID].clientID)
-			) {
-				accounts.push({
-					clientID: configs[listID].clientID,
-					accessToken: configs[listID].accessToken
-				});
-			}
-		});
-		return accounts;
-	},
-	addUsers: function(users) {
-		var self = this;
-		users.forEach(function(user) {
-			console.log(user);
-				let fullName = user.name || ' ';
-				let email = user.email;
-				let names = fullName.split(' ');
-				self.users[user.id] = names[0] || user.email;
-		});
-	},
+    determineAccounts: function (configs) {
+        var accounts = [];
+        Object.keys(configs).forEach(function (listID) {
+            if (
+                !accounts.some(account => account.clientID === configs[listID].clientID)
+            ) {
+                accounts.push({
+                    clientID: configs[listID].clientID,
+                    accessToken: configs[listID].accessToken
+                });
+            }
+        });
+        return accounts;
+    },
+    addUsers: function (users) {
+        var self = this;
+        users.forEach(function (user) {
 
-	getUsers: function(accounts) {
-		var self = this;
-		var retrievedAccounts = 0;
-		accounts.forEach(function(account) {
-			var wunderlist = new Wunderlist(account.clientID, account.accessToken);
-			wunderlist
-				.retrieveUsers()
-				.then(function(users) {
-					retrievedAccounts++;
-					self.addUsers(users);
-					if (retrievedAccounts == accounts.length) {
-						self.sendSocketNotification("users", self.users);
-					}
-				})
-				.catch(function(err) {
-					console.error(
-						"MMM-Wunderlist: Failed to retrieve users for clientID:" +
-							account.clientID +
-							" - accessToken:  " +
-							account.accessToken +
-							"Reason: " +
-							err
-					);
-				});
-		});
-	},
+            let string = null;
+            if (user.name) {
+                string = user.name.split(" ")[0];
 
-	getDisplayedListIDs: function(lists, config) {
-		var listIDs = [];
-		lists.forEach(function(list) {
-			if (config.lists.includes(list.title)) {
-				listIDs.push(list.id);
-			}
-		});
-		return listIDs;
-	},
+            }
+            self.users[user.id] = string;
+        });
+    },
 
-	addLists: function(lists, config) {
-		var self = this;
-		lists.forEach(function(list) {
-			var exists = self.lists.some(function(element) {
-				return element.id == list.id;
-			});
-			if (!exists && config.lists.includes(list.title)) {
-				self.lists.push(list);
-				self.configs[list.id] = config;
-			}
-		});
-	},
+    getUsers: function (accounts) {
+        var self = this;
+        var retrievedAccounts = 0;
+        accounts.forEach(function (account) {
+            var wunderlist = new Wunderlist(account.clientID, account.accessToken);
+            wunderlist
+                .retrieveUsers()
+                .then(function (users) {
+                    retrievedAccounts++;
+                    self.addUsers(users);
+                    if (retrievedAccounts == accounts.length) {
+                        self.sendSocketNotification("users", self.users);
+                    }
+                })
+                .catch(function (err) {
+                    console.error(
+                        "MMM-Wunderlist: Failed to retrieve users for clientID:" +
+                        account.clientID +
+                        " - accessToken:  " +
+                        account.accessToken +
+                        "Reason: " +
+                        err
+                    );
+                });
+        });
+    },
 
-	createFetcher: function(list, config) {
-		var fetcher;
-		if (typeof this.fetchers[list.id] === "undefined") {
-			var self = this;
+    getDisplayedListIDs: function (lists, config) {
+        var listIDs = [];
+        lists.forEach(function (list) {
+            if (config.lists.includes(list.title)) {
+                listIDs.push(list.id);
+            }
+        });
+        return listIDs;
+    },
 
-			console.log(
-				"MMM-Wunderlist: Create new todo fetcher for list: " +
-					list.title +
-					" - Account: " +
-					config.clientID +
-					" - Interval: " +
-					config.interval * 1000
-			);
-			fetcher = new Fetcher(
-				list.id,
-				config.interval * 1000,
-				config.accessToken,
-				config.clientID,
-				config.language,
-				config.deadlineFormat
-			);
+    addLists: function (lists, config) {
+        var self = this;
+        lists.forEach(function (list) {
+            var exists = self.lists.some(function (element) {
+                return element.id == list.id;
+            });
+            if (!exists && config.lists.includes(list.title)) {
+                self.lists.push(list);
+                self.configs[list.id] = config;
+            }
+        });
+    },
 
-			fetcher.onReceive(function(fetcher) {
-				self.broadcastTodos();
-			});
+    createFetcher: function (list, config) {
+        var fetcher;
+        if (typeof this.fetchers[list.id] === "undefined") {
+            var self = this;
 
-			fetcher.onError(function(fetcher, error) {
-				self.sendSocketNotification("FETCH_ERROR", {
-					url: fetcher.id(),
-					error: error
-				});
-			});
+            console.log(
+                "MMM-Wunderlist: Create new todo fetcher for list: " +
+                list.title +
+                " - Account: " +
+                config.clientID +
+                " - Interval: " +
+                config.interval * 1000
+            );
+            fetcher = new Fetcher(
+                list.id,
+                config.interval * 1000,
+                config.accessToken,
+                config.clientID,
+                config.language,
+                config.deadlineFormat
+            );
 
-			this.fetchers[list.id] = {
-				listID: list.id,
-				instance: fetcher
-			};
-		} else {
-			console.log("MMM-Wunderlist: Use exsisting todo fetcher for list: " + list.id);
-			fetcher = this.fetchers[list.id].instance;
-			fetcher.setReloadInterval(config.interval);
-			fetcher.broadcastItems();
-		}
+            fetcher.onReceive(function (fetcher) {
+                self.broadcastTodos();
+            });
 
-		fetcher.startFetch();
-	},
+            fetcher.onError(function (fetcher, error) {
+                self.sendSocketNotification("FETCH_ERROR", {
+                    url: fetcher.id(),
+                    error: error
+                });
+            });
 
-	broadcastTodos: function() {
-		var todos = {};
-		for (var f in this.fetchers) {
-			todos[this.fetchers[f].listID] = this.fetchers[f].instance.items();
-		}
-		this.sendSocketNotification("RETRIEVED_TODOS", todos);
-	},
+            this.fetchers[list.id] = {
+                listID: list.id,
+                instance: fetcher
+            };
+        } else {
+            console.log("MMM-Wunderlist: Use exsisting todo fetcher for list: " + list.id);
+            fetcher = this.fetchers[list.id].instance;
+            fetcher.setReloadInterval(config.interval);
+            fetcher.broadcastItems();
+        }
 
-	allInstancesStarted: function() {
-		return (
-			this.allModulesLoaded && this.startedInstances == this.instances.length
-		);
-	},
+        fetcher.startFetch();
+    },
 
-	createFetchers: function() {
-		const self = this;
-		this.lists.forEach(function(list) {
-			self.createFetcher(list, self.configs[list.id]);
-		});
-	},
+    broadcastTodos: function () {
+        var todos = {};
+        for (var f in this.fetchers) {
+            todos[this.fetchers[f].listID] = this.fetchers[f].instance.items();
+        }
+        this.sendSocketNotification("RETRIEVED_TODOS", todos);
+    },
 
-	registerInstance: function(id, config) {
-		const self = this;
-		this.instances.push(id);
-		this.getLists(config, function(lists) {
-			self.addLists(lists, config);
-			var displayedListIDs = self.getDisplayedListIDs(lists, config);
-			self.sendSocketNotification("RETRIEVED_LIST_IDS", {
-				id,
-				displayedListIDs
-			});
-			self.startedInstances++;
-			if (self.allInstancesStarted()) {
-				self.getUsers(self.determineAccounts(self.configs));
-				self.createFetchers();
-			}
-		});
-	},
+    allInstancesStarted: function () {
+        return (
+            this.allModulesLoaded && this.startedInstances == this.instances.length
+        );
+    },
 
-	// Subclass socketNotificationReceived received.
-	socketNotificationReceived: function(notification, payload) {
-		const self = this;
-		if (notification === "REGISTER_INSTANCE") {
-			this.registerInstance(payload.id, payload.config);
-		} else if (notification === "ALL_MODULES_STARTED") {
-			this.allModulesLoaded = true;
-		}
-	}
+    createFetchers: function () {
+        const self = this;
+        this.lists.forEach(function (list) {
+            self.createFetcher(list, self.configs[list.id]);
+        });
+    },
+
+    registerInstance: function (id, config) {
+        const self = this;
+        this.instances.push(id);
+        this.getLists(config, function (lists) {
+            self.addLists(lists, config);
+            var displayedListIDs = self.getDisplayedListIDs(lists, config);
+            self.sendSocketNotification("RETRIEVED_LIST_IDS", {
+                id,
+                displayedListIDs
+            });
+            self.startedInstances++;
+            if (self.allInstancesStarted()) {
+                self.getUsers(self.determineAccounts(self.configs));
+                self.createFetchers();
+            }
+        });
+    },
+
+    // Subclass socketNotificationReceived received.
+    socketNotificationReceived: function (notification, payload) {
+        const self = this;
+        if (notification === "REGISTER_INSTANCE") {
+            this.registerInstance(payload.id, payload.config);
+        } else if (notification === "ALL_MODULES_STARTED") {
+            this.allModulesLoaded = true;
+        }
+    }
 });
