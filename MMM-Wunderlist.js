@@ -80,7 +80,6 @@ Module.register("MMM-Wunderlist", {
 				}
 			}
 		}
-		console.log(tasksShown);
 		return tasksShown.slice(0, this.config.maximumEntries);
 	},
 

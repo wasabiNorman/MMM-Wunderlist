@@ -58,7 +58,6 @@ module.exports = NodeHelper.create({
     addUsers: function (users) {
         var self = this;
         users.forEach(function (user) {
-
             let string = null;
             if (user.name) {
                 string = user.name.split(" ")[0];
